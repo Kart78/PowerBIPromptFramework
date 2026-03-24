@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power BI AI Prompt Framework</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b10;
+    --surface: #12141c;
+    --surface2: #1a1d29;
+    --border: #252838;
+    --accent: #f5c518;
+    --accent2: #e8843a;
+    --accent3: #5b8dee;
+    --accent4: #3ecf8e;
+    --text: #e8eaf2;
+    --muted: #6b7090;
+    --tag-bg: #1e2133;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(91,141,238,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91,141,238,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 56px 48px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .logo-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .header-text h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .header-text h1 span { color: var(--accent); }
+
+  .header-text p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  .header-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .tag {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* LAYOUT */
+  main {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 180px);
+  }
+
+  /* SIDEBAR NAV */
+  nav {
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .nav-section-label {
+    padding: 0 24px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .nav-item:hover { color: var(--text); background: var(--surface); }
+
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(245,197,24,0.05);
+  }
+
+  .nav-icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .nav-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 24px;
+  }
+
+  /* CONTENT */
+  .content {
+    padding: 40px 48px;
+    overflow-y: auto;
+  }
+
+  /* SECTIONS */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-header {
+    margin-bottom: 32px;
+  }
+
+  .section-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+
+  .section-desc {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 680px;
+  }
+
+  /* PROMPT CARD */
+  .prompt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .prompt-card:hover { border-color: #353a55; }
+
+  .prompt-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .prompt-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .prompt-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+
+  .prompt-card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .prompt-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    border-radius: 20px;
+    padding: 3px 10px;
+    border: 1px solid;
+  }
+
+  .badge-context { color: var(--accent3); border-color: rgba(91,141,238,0.3); background: rgba(91,141,238,0.08); }
+  .badge-build { color: var(--accent4); border-color: rgba(62,207,142,0.3); background: rgba(62,207,142,0.08); }
+  .badge-refine { color: var(--accent2); border-color: rgba(232,132,58,0.3); background: rgba(232,132,58,0.08); }
+  .badge-debug { color: #e84848; border-color: rgba(232,72,72,0.3); background: rgba(232,72,72,0.08); }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+
+  .prompt-card.open .chevron { transform: rotate(180deg); }
+
+  .prompt-body {
+    display: none;
+    padding: 0 20px 20px;
+  }
+
+  .prompt-card.open .prompt-body { display: block; }
+
+  .prompt-purpose {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .prompt-template {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: #c8cce0;
+    position: relative;
+    white-space: pre-wrap;
+  }
+
+  .placeholder {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .comment {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--accent4); border-color: var(--accent4); }
+
+  /* VARIABLE PILLS */
+  .variables-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .var-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+  }
+
+  /* WORKFLOW DIAGRAM */
+  .workflow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 32px 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .wf-step {
+    flex: 1;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 16px;
+    position: relative;
+  }
+
+  .wf-step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 16px;
+    z-index: 2;
+  }
+
+  .wf-step:not(:last-child) { margin-right: 28px; }
+
+  .wf-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .wf-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .wf-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* CHECKLIST */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .check-icon {
+    flex-shrink: 0;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: rgba(62,207,142,0.1);
+    border: 1px solid rgba(62,207,142,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    color: var(--accent4);
+    margin-top: 1px;
+  }
+
+  .check-text strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .check-text span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* TIPS GRID */
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .tip-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .tip-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .tip-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* REFERENCE TABLE */
+  .ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 13px;
+  }
+
+  .ref-table th {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .ref-table td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    vertical-align: top;
+    font-size: 12px;
+  }
+
+  .ref-table tr:hover td { background: var(--surface); }
+
+  .mono { font-family: 'DM Mono', monospace; color: var(--accent3); font-size: 11px; }
+
+  /* BUILDER */
+  .builder-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+
+  .builder-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .builder-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .builder-form { padding: 16px; }
+
+  .field-group { margin-bottom: 14px; }
+
+  .field-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 6px;
+    letter-spacing: 0.06em;
+  }
+
+  .field-input, .field-select, .field-textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field-input:focus, .field-select:focus, .field-textarea:focus {
+    border-color: var(--accent3);
+  }
+
+  .field-textarea { resize: vertical; min-height: 80px; }
+
+  .field-select option { background: var(--surface); }
+
+  .build-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0a0b10;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+
+  .build-btn:hover { background: #ffd84a; }
+
+  .output-area {
+    padding: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.8;
+    color: #c8cce0;
+    white-space: pre-wrap;
+    min-height: 300px;
+    position: relative;
+  }
+
+  .output-placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .output-copy-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .output-copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; }
+    nav { display: none; }
+    .content { padding: 24px; }
+    header { padding: 32px 24px; }
+    .builder-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-badge">
+      <div class="logo-dot"></div>
+      PBIP + PBIR + AI — PROMPT FRAMEWORK v1.0
+    </div>
+    <div class="header-text" style="margin-top:16px;">
+      <h1>Power BI <span>AI Dev</span><br>Prompt Framework</h1>
+      <p>A structured prompt library for building Power BI reports using natural language, Claude, and the .pbip project format — no manual DAX, no visual drag-and-drop.</p>
+      <div class="header-tags">
+        <span class="tag">.PBIP</span>
+        <span class="tag">.PBIR JSON</span>
+        <span class="tag">CLAUDE SKILL</span>
+        <span class="tag">DAX-FREE WORKFLOW</span>
+        <span class="tag">IBCS VISUALS</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <nav>
+    <div style="padding-bottom:8px;">
+      <div class="nav-section-label">Framework</div>
+      <div class="nav-item active" onclick="showSection('workflow', this)">
+        <div class="nav-icon">⚡</div> How It Works
+      </div>
+      <div class="nav-item" onclick="showSection('context', this)">
+        <div class="nav-icon">📂</div> 1. Context Prompts
+      </div>
+      <div class="nav-item" onclick="showSection('build', this)">
+        <div class="nav-icon">🏗️</div> 2. Build Prompts
+      </div>
+      <div class="nav-item" onclick="showSection('refine', this)">
+        <div class="nav-icon">✏️</div> 3. Refine Prompts
+      </div>
+      <div class="nav-item" onclick="showSection('debug', this)">
+        <div class="nav-icon">🐛</div> 4. Debug Prompts
+      </div>
+    </div>
+    <div class="nav-divider"></div>
+    <div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item" onclick="showSection('builder', this)">
+        <div class="nav-icon">⚙️</div> Prompt Builder
+      </div>
+      <div class="nav-item" onclick="showSection('reference', this)">
+        <div class="nav-icon">📋</div> Visual Reference
+      </div>
+      <div class="nav-item" onclick="showSection('tips', this)">
+        <div class="nav-icon">💡</div> Best Practices
+      </div>
+    </div>
+  </nav>
+
+  <div class="content">
+
+    <!-- WORKFLOW -->
+    <div id="sec-workflow" class="section active">
+      <div class="section-header">
+        <div class="section-eyebrow">START HERE</div>
+        <div class="section-title">The PBIP + AI Workflow</div>
+        <p class="section-desc">Save your report as a <strong>.pbip</strong> project. Every visual becomes a JSON file. Every measure becomes readable text. AI can read that — and write it. This framework gives you the exact prompts to do it right.</p>
+      </div>
+
+      <div class="workflow">
+        <div class="wf-step">
+          <div class="wf-num">01</div>
+          <div class="wf-name">Save as .pbip</div>
+          <div class="wf-desc">File → Save as → Power BI Project. Unlocks JSON structure for all visuals and measures.</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">02</div>
+          <div class="wf-name">Load Claude Skill</div>
+          <div class="wf-desc">Point Claude to the PBIR skill library so it knows native visual JSON schemas.</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">03</div>
+          <div class="wf-name">Give Context</div>
+          <div class="wf-desc">Share your data model, tables, columns, and report goal in natural language.</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">04</div>
+          <div class="wf-name">Build & Place</div>
+          <div class="wf-desc">Claude writes measures, builds pages, and places visuals directly as JSON files.</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">05</div>
+          <div class="wf-name">Reload Desktop</div>
+          <div class="wf-desc">Reload the .pbip in Power BI Desktop. Report appears fully built. Iterate as needed.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div class="section-eyebrow" style="margin-bottom:16px;">Framework Phases</div>
+        <div class="checklist">
+          <div class="check-item">
+            <div class="check-icon">1</div>
+            <div class="check-text">
+              <strong>Context Prompts</strong>
+              <span>Teach Claude your data model, grain, relationships, and business terminology before asking it to build anything.</span>
+            </div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">2</div>
+            <div class="check-text">
+              <strong>Build Prompts</strong>
+              <span>Request specific pages, visuals, measures, and layouts using precise natural language templates.</span>
+            </div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">3</div>
+            <div class="check-text">
+              <strong>Refine Prompts</strong>
+              <span>Adjust formatting, color, positioning, IBCS compliance, and conditional logic iteratively.</span>
+            </div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">4</div>
+            <div class="check-text">
+              <strong>Debug Prompts</strong>
+              <span>Diagnose broken visuals, incorrect JSON, measure errors, and layout issues.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEXT PROMPTS -->
+    <div id="sec-context" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">PHASE 1</div>
+        <div class="section-title">Context Prompts</div>
+        <p class="section-desc">Before Claude can build anything, it needs to understand your data model. These prompts establish the foundation — tables, columns, relationships, grain, and business rules.</p>
+      </div>
+
+      <!-- P1 -->
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-01</span>
+            <span class="prompt-card-title">Data Model Introduction</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-context">CONTEXT</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Use this first. Establishes the full schema before any build requests. Paste in your actual table/column names.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button><span class="comment"># DATA MODEL CONTEXT</span>
+You are a Power BI developer working with the PBIR format (.pbip project).
+
+<span class="comment">## Project Location</span>
+My .pbip project is located at: <span class="placeholder">[path/to/project.pbip]</span>
+
+<span class="comment">## Data Model</span>
+The model contains the following tables:
+
+<span class="placeholder">[TABLE NAME]</span> — <span class="placeholder">[description, e.g. "Fact table with one row per sales order line"]</span>
+  Key columns: <span class="placeholder">[Col1, Col2, Col3]</span>
+  Grain: <span class="placeholder">[e.g. one row per transaction per day]</span>
+
+<span class="placeholder">[DIM TABLE NAME]</span> — <span class="placeholder">[description]</span>
+  Key columns: <span class="placeholder">[Col1, Col2, Col3]</span>
+
+<span class="comment">## Relationships</span>
+- <span class="placeholder">[FactTable[DateKey]]</span> → <span class="placeholder">[DimDate[DateKey]]</span> (many-to-one)
+- <span class="placeholder">[FactTable[ProductID]]</span> → <span class="placeholder">[DimProduct[ProductID]]</span> (many-to-one)
+
+<span class="comment">## Business Rules</span>
+- <span class="placeholder">[e.g. Revenue = SUM(Sales[Amount]) excluding returns]</span>
+- <span class="placeholder">[e.g. Budget is stored in a separate BudgetFact table]</span>
+
+Confirm you understand the model before I ask you to build anything.</div>
+          <div class="variables-row">
+            <span class="var-pill">[path/to/project.pbip]</span>
+            <span class="var-pill">[TABLE NAME]</span>
+            <span class="var-pill">[description]</span>
+            <span class="var-pill">[Key columns]</span>
+            <span class="var-pill">[Relationships]</span>
+            <span class="var-pill">[Business Rules]</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- P2 -->
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-02</span>
+            <span class="prompt-card-title">Load PBIR Skill Library</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-context">CONTEXT</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Points Claude to the PBIR JSON skill so it can write valid visual definitions. Run this once per session.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Before we begin building, please read the PBIR skill reference at:
+<span class="placeholder">[path/to/pbir-skill/SKILL.md]</span>
+
+This teaches you the JSON schema for native Power BI visuals including:
+- Visual type identifiers
+- Config structure (x, y, width, height)
+- Data role bindings (category, values, legend)
+- Filter and slicer JSON patterns
+- Measure definition format
+
+Once loaded, confirm which visual types you have reference JSON for.</div>
+          <div class="variables-row">
+            <span class="var-pill">[path/to/pbir-skill/SKILL.md]</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- P3 -->
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-03</span>
+            <span class="prompt-card-title">Report Goal & Audience</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-context">CONTEXT</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Sets the strategic intent. Claude needs to know WHY the report exists to make good layout and visual choices.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button><span class="comment">## Report Purpose</span>
+This report is for: <span class="placeholder">[audience — e.g. "C-suite monthly business review"]</span>
+
+Primary question it must answer: <span class="placeholder">[e.g. "Are we on track vs. budget this month?"]</span>
+
+Report style: <span class="placeholder">[e.g. IBCS-compliant / executive / operational / exploratory]</span>
+
+Key metrics the audience cares about:
+1. <span class="placeholder">[Metric 1 — e.g. Revenue vs Budget]</span>
+2. <span class="placeholder">[Metric 2 — e.g. Gross Margin %]</span>
+3. <span class="placeholder">[Metric 3 — e.g. Units Sold YTD]</span>
+
+Slicing dimensions: <span class="placeholder">[e.g. Region, Product Category, Time Period]</span>
+
+The report should have <span class="placeholder">[N]</span> pages:
+- Page 1: <span class="placeholder">[Overview / Summary]</span>
+- Page 2: <span class="placeholder">[Drill-down / Detail]</span></div>
+          <div class="variables-row">
+            <span class="var-pill">[audience]</span>
+            <span class="var-pill">[primary question]</span>
+            <span class="var-pill">[report style]</span>
+            <span class="var-pill">[metrics]</span>
+            <span class="var-pill">[pages]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUILD PROMPTS -->
+    <div id="sec-build" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">PHASE 2</div>
+        <div class="section-title">Build Prompts</div>
+        <p class="section-desc">These prompts instruct Claude to write measures, create report pages, and place visuals as PBIR JSON files directly into your project folder.</p>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-04</span>
+            <span class="prompt-card-title">Write DAX Measures</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-build">BUILD</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Ask Claude to write all required measures before building visuals. Always do this first in the build phase.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Based on the data model above, write the following measures and save them to:
+<span class="placeholder">[ProjectFolder/SemanticModel/definition/tables/MeasureTable/]</span>
+
+Measures needed:
+
+1. <span class="placeholder">[Measure Name]</span>
+   Logic: <span class="placeholder">[e.g. Total Revenue = SUM of Sales[Amount] where Status = "Complete"]</span>
+   Format: <span class="placeholder">[e.g. Currency, 0 decimals]</span>
+
+2. <span class="placeholder">[Measure Name]</span>
+   Logic: <span class="placeholder">[e.g. Revenue vs Budget % = DIVIDE(Revenue - Budget, Budget)]</span>
+   Format: <span class="placeholder">[e.g. Percentage, 1 decimal]</span>
+
+3. <span class="placeholder">[Measure Name — time intelligence]</span>
+   Logic: <span class="placeholder">[e.g. Revenue YTD using TOTALYTD against DimDate[Date]]</span>
+
+Write clean, commented DAX. Use variables (VAR) for readability.
+After writing, list all measure names so I can reference them in visual bindings.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-05</span>
+            <span class="prompt-card-title">Build a Full Report Page</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-build">BUILD</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">The core build prompt. Creates a complete page with multiple visuals as PBIR JSON. Be explicit about layout positions.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Create a new report page named "<span class="placeholder">[Page Name]</span>" in the PBIR project at:
+<span class="placeholder">[ProjectFolder/Reports/ReportName/definition/pages/]</span>
+
+Canvas size: <span class="placeholder">[1280 x 720]</span> (standard 16:9)
+
+Place the following visuals:
+
+<span class="comment">--- VISUAL 1: KPI Card ---</span>
+Type: KPI card (native)
+Position: x=<span class="placeholder">[20]</span>, y=<span class="placeholder">[20]</span>, width=<span class="placeholder">[200]</span>, height=<span class="placeholder">[100]</span>
+Measure: <span class="placeholder">[Revenue]</span>
+Comparison measure: <span class="placeholder">[Budget Revenue]</span>
+Label: "<span class="placeholder">[Revenue]</span>"
+
+<span class="comment">--- VISUAL 2: Line Chart (Trend) ---</span>
+Type: Line chart
+Position: x=<span class="placeholder">[240]</span>, y=<span class="placeholder">[20]</span>, width=<span class="placeholder">[600]</span>, height=<span class="placeholder">[200]</span>
+X-axis: <span class="placeholder">[DimDate[MonthYear]]</span>
+Y-axis values: <span class="placeholder">[Revenue, Budget Revenue]</span>
+Legend: Show
+Title: "<span class="placeholder">[Monthly Revenue vs Budget]</span>"
+
+<span class="comment">--- VISUAL 3: Slicer ---</span>
+Type: Slicer (dropdown)
+Position: x=<span class="placeholder">[860]</span>, y=<span class="placeholder">[20]</span>, width=<span class="placeholder">[200]</span>, height=<span class="placeholder">[100]</span>
+Field: <span class="placeholder">[DimRegion[RegionName]]</span>
+
+Write the complete PBIR JSON for each visual and the page definition file.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-06</span>
+            <span class="prompt-card-title">IBCS Variance Visual</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-build">BUILD</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Specifically for IBCS-style bar/waterfall variance charts — the most common advanced visual in executive reporting.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Add an IBCS-style variance chart to page "<span class="placeholder">[Page Name]</span>":
+
+Visual type: <span class="placeholder">[Clustered bar / Waterfall]</span>
+Position: x=<span class="placeholder">[20]</span>, y=<span class="placeholder">[140]</span>, width=<span class="placeholder">[580]</span>, height=<span class="placeholder">[260]</span>
+
+Data bindings:
+- Category axis: <span class="placeholder">[DimProduct[Category]]</span>
+- Actual value: <span class="placeholder">[Revenue]</span> measure
+- Reference/Plan value: <span class="placeholder">[Budget Revenue]</span> measure
+- Variance measure: <span class="placeholder">[Revenue vs Budget Variance]</span>
+
+IBCS formatting rules to apply:
+- Actuals bar color: <span class="placeholder">[#404040 (dark gray)]</span>
+- Plan bar: outlined only, no fill
+- Positive variance: <span class="placeholder">[#3ecf8e (green)]</span>
+- Negative variance: <span class="placeholder">[#e84848 (red)]</span>
+- Data labels: show absolute variance values
+- No chart border, no gridlines
+- Font: consistent with report theme
+
+Apply these formatting overrides in the visual JSON config block.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-07</span>
+            <span class="prompt-card-title">Add Conditional Formatting</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-build">BUILD</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Applies rules-based or measure-driven conditional formatting to table or matrix visuals via JSON.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Apply conditional formatting to the <span class="placeholder">[table/matrix]</span> visual on page "<span class="placeholder">[Page Name]</span>":
+
+Column to format: <span class="placeholder">[Revenue vs Budget %]</span>
+Format type: <span class="placeholder">[Background color / Font color / Icon]</span>
+
+Rules:
+- If value &lt; <span class="placeholder">[-0.05]</span>: color = <span class="placeholder">[#e84848]</span> (red — significantly below)
+- If value between <span class="placeholder">[-0.05]</span> and <span class="placeholder">[0]</span>: color = <span class="placeholder">[#f5c518]</span> (amber — slightly below)
+- If value &gt;= <span class="placeholder">[0]</span>: color = <span class="placeholder">[#3ecf8e]</span> (green — on or above target)
+
+Apply this as a rules-based conditional format in the visual JSON.
+If icon set is used, use: <span class="placeholder">[up/flat/down arrows]</span>.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFINE PROMPTS -->
+    <div id="sec-refine" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">PHASE 3</div>
+        <div class="section-title">Refine Prompts</div>
+        <p class="section-desc">Once the structure is built, use these prompts to fine-tune layout, formatting, labels, and interactions without rebuilding from scratch.</p>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-08</span>
+            <span class="prompt-card-title">Resize & Reposition Visual</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-refine">REFINE</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Precise pixel-level repositioning. Much faster than drag-and-drop when you know the desired coordinates.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>In the PBIR JSON for page "<span class="placeholder">[Page Name]</span>", update the position of the "<span class="placeholder">[visual title or type]</span>" visual:
+
+Current position: x=<span class="placeholder">[old_x]</span>, y=<span class="placeholder">[old_y]</span>, w=<span class="placeholder">[old_w]</span>, h=<span class="placeholder">[old_h]</span>
+New position:     x=<span class="placeholder">[new_x]</span>, y=<span class="placeholder">[new_y]</span>, w=<span class="placeholder">[new_w]</span>, h=<span class="placeholder">[new_h]</span>
+
+Update only the position/size properties in the config JSON.
+Do not change any data bindings or formatting settings.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-09</span>
+            <span class="prompt-card-title">Apply Report Theme</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-refine">REFINE</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Applies a consistent color palette and typography across all visuals via the theme JSON file.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Update the report theme file at:
+<span class="placeholder">[ProjectFolder/Reports/ReportName/StaticResources/RegisteredResources/]</span>
+
+Apply the following theme settings:
+
+Brand colors (in order):
+1. <span class="placeholder">[#your-primary]</span>   — primary / actuals
+2. <span class="placeholder">[#your-secondary]</span> — secondary / plan
+3. <span class="placeholder">[#your-accent]</span>    — positive variance
+4. <span class="placeholder">[#e84848]</span>         — negative variance / alert
+5. <span class="placeholder">[#6b7090]</span>         — neutral / muted
+
+Background: <span class="placeholder">[#ffffff / #f4f5f7]</span>
+Font family: <span class="placeholder">[Segoe UI / DIN / Calibri]</span>
+Default font size: <span class="placeholder">[10]</span>
+
+Write the complete theme JSON and confirm file path.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-10</span>
+            <span class="prompt-card-title">Update Data Labels & Titles</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-refine">REFINE</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Fine-tune how numbers and titles appear on visuals without touching the data model.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>For the "<span class="placeholder">[visual name]</span>" on page "<span class="placeholder">[Page Name]</span>", update:
+
+Title:
+- Text: "<span class="placeholder">[New Title Text]</span>"
+- Font size: <span class="placeholder">[12]</span>
+- Bold: <span class="placeholder">[true/false]</span>
+- Alignment: <span class="placeholder">[left/center]</span>
+
+Data labels:
+- Show: <span class="placeholder">[true]</span>
+- Format: <span class="placeholder">[#,0 / 0.0% / $#,0K]</span>
+- Font size: <span class="placeholder">[9]</span>
+- Position: <span class="placeholder">[inside end / outside end / callout]</span>
+
+Axis labels:
+- X-axis title: <span class="placeholder">[hidden/shown, text]</span>
+- Y-axis: <span class="placeholder">[hidden — use data labels instead]</span>
+
+Update only the formatting config JSON for this visual.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-11</span>
+            <span class="prompt-card-title">Add Cross-Filter Interaction</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-refine">REFINE</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Configure which visuals filter which others — critical for executive dashboards with slicers.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Configure visual interactions on page "<span class="placeholder">[Page Name]</span>":
+
+When the user clicks "<span class="placeholder">[Slicer / Chart name]</span>":
+- "<span class="placeholder">[Visual A]</span>" → <span class="placeholder">[filter / highlight / no interaction]</span>
+- "<span class="placeholder">[Visual B]</span>" → <span class="placeholder">[filter / highlight / no interaction]</span>
+- "<span class="placeholder">[Visual C]</span>" → <span class="placeholder">[no interaction]</span> (keep static)
+
+Apply these interaction settings in the page definition JSON.
+Note: "filter" removes non-matching rows; "highlight" dims them.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEBUG PROMPTS -->
+    <div id="sec-debug" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">PHASE 4</div>
+        <div class="section-title">Debug Prompts</div>
+        <p class="section-desc">When something doesn't load, looks wrong, or throws an error in Power BI Desktop — use these prompts to diagnose and fix the PBIR JSON.</p>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-12</span>
+            <span class="prompt-card-title">Visual Won't Load / Blank</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-debug">DEBUG</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">The most common issue — visual appears blank or "can't display" after reload. Usually a data role binding or schema mismatch.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>The "<span class="placeholder">[visual type]</span>" on page "<span class="placeholder">[Page Name]</span>" is not rendering after reload.
+It shows: <span class="placeholder">[blank / "Can't display" error / loading spinner that never resolves]</span>
+
+Here is the current visual JSON:
+<span class="placeholder">[paste visual JSON here]</span>
+
+Please diagnose:
+1. Are the data role names correct for this visual type?
+2. Are all referenced measures/columns spelled exactly as they appear in the model?
+3. Is the visual type identifier correct?
+4. Is the config structure valid for PBIR format?
+
+Provide the corrected JSON with comments explaining each fix.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-13</span>
+            <span class="prompt-card-title">Measure Returns Error</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-debug">DEBUG</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">When a measure shows [Error] or unexpected blank in Power BI. Paste the DAX and describe the expected output.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>This DAX measure is returning <span class="placeholder">[an error / blank / wrong value]</span>:
+
+<span class="placeholder">[Measure Name]</span> =
+<span class="placeholder">[paste DAX here]</span>
+
+Expected result: <span class="placeholder">[e.g. "Should return current month revenue divided by budget, as a decimal"]</span>
+Actual result: <span class="placeholder">[e.g. "Returns blank when filtering by Region"]</span>
+Context: the measure is used in a <span class="placeholder">[bar chart / table / KPI card]</span> filtered by <span class="placeholder">[Region slicer]</span>
+
+Known model facts:
+- <span class="placeholder">[e.g. Budget table has no Region column — joined via DimProduct]</span>
+
+Diagnose the issue and rewrite the corrected DAX.</div>
+        </div>
+      </div>
+
+      <div class="prompt-card" onclick="toggleCard(this)">
+        <div class="prompt-card-header">
+          <div class="prompt-card-title-row">
+            <span class="prompt-number">P-14</span>
+            <span class="prompt-card-title">JSON Validation Check</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="prompt-badge badge-debug">DEBUG</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-purpose">Power BI Desktop fails to load the .pbip project entirely — usually a malformed JSON file in the project structure.</div>
+          <div class="prompt-template"><button class="copy-btn" onclick="copyPrompt(event, this)">Copy</button>Power BI Desktop won't reload my .pbip project after the last changes.
+The error says: <span class="placeholder">[paste error message if any]</span>
+
+The last files I modified were:
+- <span class="placeholder">[file path 1]</span>
+- <span class="placeholder">[file path 2]</span>
+
+Here are their current contents:
+
+<span class="placeholder">[File 1 name]</span>:
+<span class="placeholder">[paste JSON]</span>
+
+<span class="placeholder">[File 2 name]</span>:
+<span class="placeholder">[paste JSON]</span>
+
+Validate the JSON structure for PBIR compliance.
+Check for: trailing commas, missing required fields, incorrect nesting, invalid property names.
+Return corrected files with changes highlighted.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMPT BUILDER -->
+    <div id="sec-builder" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">TOOL</div>
+        <div class="section-title">Prompt Builder</div>
+        <p class="section-desc">Fill in the fields and generate a ready-to-paste prompt for your most common build scenario — a new report page with visuals.</p>
+      </div>
+
+      <div class="builder-grid">
+        <div class="builder-panel">
+          <div class="builder-panel-header">
+            <span>⚙</span> BUILD INPUTS
+          </div>
+          <div class="builder-form">
+            <div class="field-group">
+              <label class="field-label">REPORT PAGE NAME</label>
+              <input class="field-input" id="b-page" placeholder="e.g. Sales Overview" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">PROJECT PATH</label>
+              <input class="field-input" id="b-path" placeholder="e.g. C:/Projects/SalesReport/" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">PRIMARY MEASURE</label>
+              <input class="field-input" id="b-measure1" placeholder="e.g. Revenue" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">COMPARISON MEASURE</label>
+              <input class="field-input" id="b-measure2" placeholder="e.g. Budget Revenue" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">DATE COLUMN</label>
+              <input class="field-input" id="b-date" placeholder="e.g. DimDate[MonthYear]" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">SLICER FIELD</label>
+              <input class="field-input" id="b-slicer" placeholder="e.g. DimRegion[RegionName]" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">VISUAL STYLE</label>
+              <select class="field-select" id="b-style">
+                <option value="standard">Standard Dashboard</option>
+                <option value="ibcs">IBCS Executive</option>
+                <option value="operational">Operational / Detailed</option>
+              </select>
+            </div>
+            <button class="build-btn" onclick="buildPrompt()">Generate Prompt →</button>
+          </div>
+        </div>
+
+        <div class="builder-panel">
+          <div class="builder-panel-header">
+            <span>📄</span> GENERATED PROMPT
+          </div>
+          <div class="output-area" id="output-area">
+            <span class="output-placeholder">Fill in the fields and click "Generate Prompt" to build your custom Power BI AI prompt.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERENCE -->
+    <div id="sec-reference" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">REFERENCE</div>
+        <div class="section-title">PBIR Visual Quick Reference</div>
+        <p class="section-desc">Common native Power BI visuals, their PBIR type identifiers, and required data role bindings. Use these in your build prompts.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>Visual</th>
+            <th>PBIR Type ID</th>
+            <th>Required Data Roles</th>
+            <th>Common Use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>KPI Card</strong></td>
+            <td><span class="mono">card</span></td>
+            <td>Value, Target (optional)</td>
+            <td>Single metric headline</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-row Card</strong></td>
+            <td><span class="mono">multiRowCard</span></td>
+            <td>Fields (multiple measures)</td>
+            <td>KPI summary row</td>
+          </tr>
+          <tr>
+            <td><strong>Line Chart</strong></td>
+            <td><span class="mono">lineChart</span></td>
+            <td>Axis, Values, Legend</td>
+            <td>Trends over time</td>
+          </tr>
+          <tr>
+            <td><strong>Bar Chart (Clustered)</strong></td>
+            <td><span class="mono">barChart</span></td>
+            <td>Axis, Values, Legend</td>
+            <td>Category comparison</td>
+          </tr>
+          <tr>
+            <td><strong>Column Chart</strong></td>
+            <td><span class="mono">columnChart</span></td>
+            <td>Axis, Values, Legend</td>
+            <td>Period comparison</td>
+          </tr>
+          <tr>
+            <td><strong>Waterfall</strong></td>
+            <td><span class="mono">waterfallChart</span></td>
+            <td>Category, Breakdown, Values</td>
+            <td>Variance / bridge</td>
+          </tr>
+          <tr>
+            <td><strong>Table</strong></td>
+            <td><span class="mono">tableEx</span></td>
+            <td>Values (multiple columns)</td>
+            <td>Detail / drill view</td>
+          </tr>
+          <tr>
+            <td><strong>Matrix</strong></td>
+            <td><span class="mono">pivotTable</span></td>
+            <td>Rows, Columns, Values</td>
+            <td>Pivot / cross-tab</td>
+          </tr>
+          <tr>
+            <td><strong>Slicer</strong></td>
+            <td><span class="mono">slicer</span></td>
+            <td>Field</td>
+            <td>Filter control</td>
+          </tr>
+          <tr>
+            <td><strong>Donut / Pie</strong></td>
+            <td><span class="mono">donutChart</span></td>
+            <td>Legend, Values</td>
+            <td>Part-to-whole (use sparingly)</td>
+          </tr>
+          <tr>
+            <td><strong>Scatter</strong></td>
+            <td><span class="mono">scatterChart</span></td>
+            <td>X-axis, Y-axis, Details, Size</td>
+            <td>Correlation / outliers</td>
+          </tr>
+          <tr>
+            <td><strong>Treemap</strong></td>
+            <td><span class="mono">treemap</span></td>
+            <td>Group, Values</td>
+            <td>Hierarchical proportions</td>
+          </tr>
+          <tr>
+            <td><strong>Text Box</strong></td>
+            <td><span class="mono">textbox</span></td>
+            <td>— (static content)</td>
+            <td>Labels, headings, notes</td>
+          </tr>
+          <tr>
+            <td><strong>Image</strong></td>
+            <td><span class="mono">image</span></td>
+            <td>— (URL or embedded)</td>
+            <td>Logo, background image</td>
+          </tr>
+          <tr>
+            <td><strong>Decomp Tree</strong></td>
+            <td><span class="mono">decompositionTreeVisual</span></td>
+            <td>Analyze, Explain By</td>
+            <td>Root cause analysis</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TIPS -->
+    <div id="sec-tips" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">BEST PRACTICES</div>
+        <div class="section-title">What Makes AI PBI Dev Work</div>
+        <p class="section-desc">Hard-won lessons from using Claude + PBIR in production. The quality of AI output is directly proportional to the quality of your inputs.</p>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <div class="tip-icon">📐</div>
+          <div class="tip-title">Always specify coordinates</div>
+          <div class="tip-desc">Give exact x, y, width, height values in every visual build prompt. Claude can't "see" the canvas — without coordinates, overlap is guaranteed.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🧱</div>
+          <div class="tip-title">Build measures first</div>
+          <div class="tip-desc">Never ask Claude to build a visual and write the DAX in the same prompt. Write measures first, confirm they exist, then bind them to visuals.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">📖</div>
+          <div class="tip-title">Load the skill every session</div>
+          <div class="tip-desc">Claude doesn't retain the PBIR skill between conversations. Always run P-02 at the start of each new session before any build prompts.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🔤</div>
+          <div class="tip-title">Spell field names exactly</div>
+          <div class="tip-desc">PBIR JSON is case-sensitive and exact-match. Copy-paste column and measure names directly from Power BI. One wrong character = blank visual.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🧩</div>
+          <div class="tip-title">One page per prompt</div>
+          <div class="tip-desc">Don't ask for the entire report in one shot. Build one page at a time, reload, verify, then move to the next. Iteration beats perfection.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">💬</div>
+          <div class="tip-title">Ask Claude to explain</div>
+          <div class="tip-desc">After generating JSON, ask "explain what each data role binding does here." This catches errors before you reload and builds your own PBIR knowledge.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🔁</div>
+          <div class="tip-title">Keep a backup before edits</div>
+          <div class="tip-desc">Copy the pages/ folder before a large build session. If Claude writes malformed JSON that crashes Desktop, you can restore in seconds.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">📏</div>
+          <div class="tip-title">Use a layout grid</div>
+          <div class="tip-desc">Plan your canvas on paper first: 1280×720, 4 columns of ~300px. This makes writing coordinate values fast and prevents the "eyeball it" trap.</div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🚀</div>
+          <div class="tip-title">Imperfect output is fine</div>
+          <div class="tip-desc">The goal isn't one-shot perfection — it's faster iteration. A rough first pass in 30 seconds beats an hour of drag-and-drop. Refine from there.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  function showSection(id, navEl) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    navEl.classList.add('active');
+  }
+
+  function toggleCard(card) {
+    // don't toggle if clicking copy button
+    if (event.target.classList.contains('copy-btn')) return;
+    card.classList.toggle('open');
+  }
+
+  function copyPrompt(event, btn) {
+    event.stopPropagation();
+    const template = btn.closest('.prompt-template');
+    const text = template.innerText.replace('Copy\n', '').replace('Copied!\n', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function buildPrompt() {
+    const page = document.getElementById('b-page').value || '[Page Name]';
+    const path = document.getElementById('b-path').value || '[ProjectFolder/]';
+    const m1 = document.getElementById('b-measure1').value || '[Revenue]';
+    const m2 = document.getElementById('b-measure2').value || '[Budget Revenue]';
+    const date = document.getElementById('b-date').value || '[DimDate[MonthYear]]';
+    const slicer = document.getElementById('b-slicer').value || '[DimRegion[RegionName]]';
+    const style = document.getElementById('b-style').value;
+
+    const styleNote = {
+      standard: 'Standard dashboard style — clean, clear data labels, grid layout.',
+      ibcs: 'IBCS-compliant — dark gray actuals bars, outlined plan bars, no chart borders, no gridlines, variance in green/red.',
+      operational: 'Operational style — dense, compact, show full data labels, sortable table at bottom.'
+    }[style];
+
+    const prompt = `Create a new report page named "${page}" in the PBIR project at:
+${path}Reports/[ReportName]/definition/pages/
+
+Canvas: 1280 × 720px
+
+VISUAL STYLE: ${styleNote}
+
+--- VISUAL 1: KPI Card ---
+Type: card (native KPI card)
+Position: x=20, y=20, width=220, height=100
+Measure: ${m1}
+Comparison: ${m2}
+Label: "${m1}"
+
+--- VISUAL 2: KPI Card ---
+Type: card
+Position: x=260, y=20, width=220, height=100
+Measure: [variance measure if available]
+Label: "vs Plan"
+
+--- VISUAL 3: Line Chart (Trend) ---
+Type: lineChart
+Position: x=20, y=140, width=620, height=240
+X-axis: ${date}
+Values: ${m1}, ${m2}
+Legend: show
+Title: "${m1} Trend"
+
+--- VISUAL 4: Bar Chart (Category Breakdown) ---
+Type: barChart
+Position: x=660, y=140, width=600, height=240
+Axis: [Category dimension column]
+Values: ${m1}
+Title: "${m1} by Category"
+
+--- VISUAL 5: Slicer ---
+Type: slicer (dropdown style)
+Position: x=20, y=400, width=240, height=80
+Field: ${slicer}
+
+Write complete PBIR JSON for each visual and the page definition file.
+Confirm measure names match exactly before binding.`;
+
+    const area = document.getElementById('output-area');
+    area.innerHTML = '';
+
+    // Add copy button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'output-copy-btn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(prompt).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+      });
+    };
+    area.appendChild(copyBtn);
+
+    const text = document.createTextNode(prompt);
+    area.appendChild(text);
+  }
+</script>
+</body>
+</html>
